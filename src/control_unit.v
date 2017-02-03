@@ -11,6 +11,7 @@ module control_unit (
         output  reg[7:0]    data        = 0,
 
         // to servo_driver
+        input   wire        servo_cycle_done,
         output  reg[7:0]    servo_angle = 8'h80,
 
         // to sonar_driver
@@ -36,12 +37,13 @@ module control_unit (
     parameter FETCH_CMD_STATE       = 4'h0;
     parameter FETCH_DATA_STATE_PRE  = 4'h1;
     parameter FETCH_DATA_STATE      = 4'h2;
-    parameter START_MSR_STATE       = 4'h3;
-    parameter MEASURE_STATE         = 4'h4;
-    parameter WAIT_TX_RDY_STATE_1   = 4'h5;
-    parameter SEND_DIST_STATE       = 4'h6;
-    parameter WAIT_TX_RDY_STATE_2   = 4'h7;
-    parameter SEND_ANGLE_STATE      = 4'h8;
+    parameter WAIT_SERVO_DONE       = 4'h3;
+    parameter START_MSR_STATE       = 4'h4;
+    parameter MEASURE_STATE         = 4'h5;
+    parameter WAIT_TX_RDY_STATE_1   = 4'h6;
+    parameter SEND_DIST_STATE       = 4'h7;
+    parameter WAIT_TX_RDY_STATE_2   = 4'h8;
+    parameter SEND_ANGLE_STATE      = 4'h9;
     reg[3:0] state = FETCH_CMD_STATE;
 
     // Cmd set
@@ -108,7 +110,7 @@ module control_unit (
                                         mode = cmd[0];
                                     end
                                     MEASURE_CMD: begin
-                                        state = START_MSR_STATE;
+                                        state = WAIT_SERVO_DONE;
                                     end
                                 endcase // manual cmd case
                             end
@@ -118,12 +120,12 @@ module control_unit (
                                 if (start_angle > end_angle) begin
                                     end_angle = start_angle;
                                 end
-                                state       = START_MSR_STATE;
+                                state       = WAIT_SERVO_DONE;
                             end
                         endcase // cmd case
                     end else begin
                         if (mode == AUTO_MODE) begin    // In manual mode wait for measure cmd
-                            state = START_MSR_STATE;
+                            state = WAIT_SERVO_DONE;
                         end
                     end
                 end
@@ -137,6 +139,11 @@ module control_unit (
                         end_angle   = cmd;
                         cmd_oen     = 0;
                         state       = FETCH_CMD_STATE;
+                    end
+                end
+                WAIT_SERVO_DONE: begin
+                    if (servo_cycle_done) begin
+                        state = START_MSR_STATE;
                     end
                 end
                 START_MSR_STATE: begin
