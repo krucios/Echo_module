@@ -56,22 +56,22 @@ module sonar_driver #(int freq = 50_000_000) (
                 end
                 TRIG: begin
                     if (counter == 0) begin
-                        state = WAIT_ECHO;
+                        next_state = WAIT_ECHO;
                     end
                     counter--;
                 end
                 WAIT_ECHO: begin
                     if (echo == 1) begin
-                        state = MEASURING;
+                        next_state = MEASURING;
                     end
                 end
                 MEASURING: begin
                     if (echo == 0) begin
-                        state = READY;
+                        next_state = READY;
                     end
                 end
                 READY: begin
-                    state = IDLE;
+                    next_state = IDLE;
                 end
             endcase
         end
@@ -86,9 +86,9 @@ module sonar_driver #(int freq = 50_000_000) (
         end else begin
             case (state)
                 IDLE: begin
-                    ready = 0;
                 end
                 TRIG: begin
+                    ready    = 0;
                     i_dist   = 0;
                     trig     = 1;
                 end

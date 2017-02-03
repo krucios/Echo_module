@@ -142,12 +142,12 @@ module control_unit (
                     end
                 end
                 WAIT_SERVO_DONE: begin
+                    cmd_oen       = 1;
                     if (servo_cycle_done) begin
                         state = START_MSR_STATE;
                     end
                 end
                 START_MSR_STATE: begin
-                    cmd_oen       = 1;
                     sonar_measure = 1;        // Generate measure pulse
                     state         = MEASURE_STATE;
                 end
