@@ -73,13 +73,13 @@ module control_unit (
                 if (servo_angle <= start_angle) begin
                     servo_dir = !servo_dir;
                 end else begin
-                    servo_angle--;
+                    servo_angle = servo_angle - 1;
                 end
             end else begin
                 if (servo_angle >= end_angle) begin
                     servo_dir = !servo_dir;
                 end else begin
-                    servo_angle++;
+                    servo_angle = servo_angle + 1;
                 end
             end
         end
@@ -189,4 +189,4 @@ module control_unit (
         end
     end
 
-endmodule : control_unit
+endmodule

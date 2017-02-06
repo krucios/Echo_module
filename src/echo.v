@@ -58,4 +58,4 @@ module echo (
             .sonar_measure(sonar_measure),
             .sonar_ready(sonar_ready)
         );
-endmodule : echo
+endmodule

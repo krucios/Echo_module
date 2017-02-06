@@ -1,4 +1,4 @@
-module servo_driver #(int freq = 50_000_000) (
+module servo_driver #(parameter freq = 50_000_000) (
         input  wire      clk,
         input  wire      rst_n,
         input  wire[7:0] angle,
@@ -23,7 +23,7 @@ module servo_driver #(int freq = 50_000_000) (
     parameter   LOW_PULSE   = 2'b10;
 
     // Assign new state logic
-    always @(next_state, negedge rst_n) begin
+    always @(next_state, rst_n) begin
         if (!rst_n) begin
             state       = GET_WIDTH;
             next_state  = GET_WIDTH;
@@ -47,13 +47,13 @@ module servo_driver #(int freq = 50_000_000) (
                     state       = HIGH_PULSE;
                 end
                 HIGH_PULSE: begin
-                    counter--;
+                    counter = counter - 1;
                     if (counter < pulse_width) begin
                         state = LOW_PULSE;
                     end
                 end
                 LOW_PULSE: begin
-                    counter--;
+                    counter = counter - 1;
                     if (counter == 0) begin
                         state = GET_WIDTH;
                     end
@@ -63,7 +63,7 @@ module servo_driver #(int freq = 50_000_000) (
     end
 
     // Outputs logic
-    always @(state, negedge rst_n) begin
+    always @(state, rst_n) begin
         if (!rst_n) begin
             servo_pwm = 0;
         end else begin
@@ -83,4 +83,4 @@ module servo_driver #(int freq = 50_000_000) (
             endcase
         end
     end
-endmodule : servo_driver;
+endmodule

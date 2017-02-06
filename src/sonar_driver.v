@@ -1,4 +1,4 @@
-module sonar_driver #(int freq = 50_000_000) (
+module sonar_driver #(parameter freq = 50_000_000) (
         input  wire      clk,
         input  wire      rst_n,
         input  wire      measure,
@@ -53,16 +53,16 @@ module sonar_driver #(int freq = 50_000_000) (
                         trig    = 0;
                         state   = WAIT_ECHO;
                     end
-                    counter--;
+                    counter = counter - 1;
                 end
                 WAIT_ECHO: begin
                     if (echo == 1) begin
-                        i_dist += NM_PER_CYCLE;
+                        i_dist = i_dist + NM_PER_CYCLE;
                         state = MEASURING;
                     end
                 end
                 MEASURING: begin
-                    i_dist += NM_PER_CYCLE;
+                    i_dist = i_dist + NM_PER_CYCLE;
                     if (echo == 0) begin
                         ready = 1;
                         state = IDLE;
@@ -71,4 +71,4 @@ module sonar_driver #(int freq = 50_000_000) (
             endcase
         end
     end
-endmodule : sonar_driver;
+endmodule
