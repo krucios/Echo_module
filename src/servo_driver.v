@@ -65,7 +65,8 @@ module servo_driver #(int freq = 50_000_000) (
     // Outputs logic
     always @(state, negedge rst_n) begin
         if (!rst_n) begin
-            servo_pwm = 0;
+            servo_pwm  = 0;
+            cycle_done = 0;
         end else begin
             case (state)
                 GET_WIDTH: begin
