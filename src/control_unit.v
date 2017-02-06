@@ -61,128 +61,128 @@ module control_unit (
      * Example: start_val = 1, end_value = 3
      * Angle sequence: 1 2 3 2 1 2 3 2 1 ...
      *******************************************/
-    always @(posedge servo_move, negedge rst_n) begin
-        if (!rst_n) begin
-            servo_move  = 0;
-            servo_dir   = 0;
-            servo_angle = 8'h80;
-            start_angle = 8'h80;
-            end_angle   = 8'h80;
+    always @(posedge servo_move or negedge rst_n) begin
+        if (~rst_n) begin
+            servo_dir   <= 0;
+            servo_angle <= 8'h80;
         end else begin
             if (servo_dir) begin
                 if (servo_angle <= start_angle) begin
-                    servo_dir = !servo_dir;
+                    servo_dir <= !servo_dir;
                 end else begin
-                    servo_angle = servo_angle - 1;
+                    servo_angle <= servo_angle - 1;
                 end
             end else begin
                 if (servo_angle >= end_angle) begin
-                    servo_dir = !servo_dir;
+                    servo_dir <= !servo_dir;
                 end else begin
-                    servo_angle = servo_angle + 1;
+                    servo_angle <= servo_angle + 1;
                 end
             end
         end
     end
 
-    always @(posedge clk, negedge rst_n) begin
-        if (!rst_n) begin
-            mode          = MANUAL_MODE;
-            state         = FETCH_CMD_STATE;
-            cmd_oen       = 1;
-            data_wen      = 1;
-            data          = 0;
-            sonar_measure = 0;
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            mode          <= MANUAL_MODE;
+            state         <= FETCH_CMD_STATE;
+            cmd_oen       <= 1;
+            data_wen      <= 1;
+            data          <= 0;
+            sonar_measure <= 0;
+            servo_move    <= 0;
+            start_angle   <= 8'h80;
+            end_angle     <= 8'h80;
         end else begin
             case(state)
                 FETCH_CMD_STATE: begin
-                    cmd_oen = 1;
-                    servo_move = 0;
+                    cmd_oen <= 1;
+                    servo_move <= 0;
                     if (rx_rdy) begin
-                        cmd_oen = 0;
+                        cmd_oen <= 0;
                         case (cmd[7:4])
                             MANUAL_CMD: begin // in this case
                                 case (cmd[3:2])
                                     SET_ANGLE_CMD: begin
-                                        state = FETCH_DATA_STATE_PRE;
+                                        state <= FETCH_DATA_STATE_PRE;
                                     end
                                     SET_MODE_CMD: begin
-                                        mode = cmd[0];
+                                        mode <= cmd[0];
                                     end
                                     MEASURE_CMD: begin
-                                        state = WAIT_SERVO_DONE;
+                                        state <= WAIT_SERVO_DONE;
                                     end
                                 endcase // manual cmd case
                             end
                             default: begin // In this case: [7:4] - end angle MSB, [3:0] - start angle MSB
-                                start_angle = {cmd[3:0], 4'h0};
-                                end_angle   = {cmd[7:4], 4'h0};
+                                start_angle <= {cmd[3:0], 4'h0};
+                                end_angle   <= {cmd[7:4], 4'h0};
                                 if (start_angle > end_angle) begin
-                                    end_angle = start_angle;
+                                    end_angle <= start_angle;
                                 end
-                                state       = WAIT_SERVO_DONE;
+                                state       <= WAIT_SERVO_DONE;
                             end
                         endcase // cmd case
                     end else begin
                         if (mode == AUTO_MODE) begin    // In manual mode wait for measure cmd
-                            state = WAIT_SERVO_DONE;
+                            state <= WAIT_SERVO_DONE;
                         end
                     end
                 end
                 FETCH_DATA_STATE_PRE: begin
-                    cmd_oen = 1;
-                    state = FETCH_DATA_STATE;
+                    cmd_oen <= 1;
+                    state <= FETCH_DATA_STATE;
                 end
                 FETCH_DATA_STATE: begin
                     if (rx_rdy) begin
-                        start_angle = cmd;
-                        end_angle   = cmd;
-                        cmd_oen     = 0;
-                        state       = FETCH_CMD_STATE;
+                        start_angle <= cmd;
+                        end_angle   <= cmd;
+                        cmd_oen     <= 0;
+                        state       <= FETCH_CMD_STATE;
                     end
                 end
                 WAIT_SERVO_DONE: begin
+                    cmd_oen       <= 1;
                     if (servo_cycle_done) begin
-                        state = START_MSR_STATE;
+                        state <= START_MSR_STATE;
                     end
                 end
                 START_MSR_STATE: begin
-                    cmd_oen       = 1;
-                    sonar_measure = 1;        // Generate measure pulse
-                    state         = MEASURE_STATE;
+                    sonar_measure <= 1;        // Generate measure pulse
+                    state         <= MEASURE_STATE;
                 end
                 MEASURE_STATE: begin
-                    sonar_measure = 0;
+                    sonar_measure <= 0;
                     if (sonar_ready) begin
-                        distance    = sonar_distance;   // Save distance
-                        servo_move  = 1;                // After measurement move servo
-                        state       = WAIT_TX_RDY_STATE_1;
+                        distance    <= sonar_distance;   // Save distance
+                        servo_move  <= 1;                // After measurement move servo
+                        state       <= WAIT_TX_RDY_STATE_1;
                     end
                 end
                 WAIT_TX_RDY_STATE_1: begin
                     if (tx_rdy) begin
-                        data     = {distance[7:1], 1'b0}; // Add zero as LSB for show that it's distance byte
-                        data_wen = 0;
-                        state    = SEND_DIST_STATE;
+                        data     <= {distance[7:1], 1'b0}; // Add zero as LSB for show that it's distance byte
+                        data_wen <= 0;
+                        state    <= SEND_DIST_STATE;
                     end
                 end
                 SEND_DIST_STATE: begin
-                    data_wen = 1;
+                    data_wen <= 1;
                     if (!tx_rdy) begin
-                        state = WAIT_TX_RDY_STATE_2;
+                        state <= WAIT_TX_RDY_STATE_2;
                     end
                 end
                 WAIT_TX_RDY_STATE_2: begin
                     if (tx_rdy) begin
-                        data     = {servo_angle[7:1], 1'b1}; // Add one as LSB for show that it's angle byte
-                        data_wen = 0;
-                        state    = SEND_ANGLE_STATE;
+                        data     <= {servo_angle[7:1], 1'b1}; // Add one as LSB for show that it's angle byte
+                        data_wen <= 0;
+                        state    <= SEND_ANGLE_STATE;
                     end
                 end
                 SEND_ANGLE_STATE: begin
-                    data_wen = 1;
+                    data_wen <= 1;
                     if (!tx_rdy) begin
-                        state = FETCH_CMD_STATE;
+                        state <= FETCH_CMD_STATE;
                     end
                 end
             endcase // state case

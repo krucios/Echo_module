@@ -19,54 +19,86 @@ module sonar_driver #(parameter freq = 50_000_000) (
     reg[31:0] counter = 0;
     reg[31:0] i_dist  = 0;
 
-    reg[1:0]    state = 0;              // FSM state
-    parameter   IDLE       = 2'b00;
-    parameter   TRIG       = 2'b01;
-    parameter   WAIT_ECHO  = 2'b10;
-    parameter   MEASURING  = 2'b11;
+    reg[2:0]    state      = 0;
+    reg[2:0]    next_state = 0;
+    parameter   IDLE       = 3'h0;
+    parameter   TRIG       = 3'h1;
+    parameter   WAIT_ECHO  = 3'h2;
+    parameter   MEASURING  = 3'h3;
+    parameter   READY      = 3'h4;
 
     assign distance = i_dist[31:24];
 
-    always @(posedge clk, negedge rst_n) begin
-        if (!rst_n) begin
-            state   = IDLE;
-            i_dist  = 0;
-            ready   = 0;
-            trig    = 0;
-            counter = 0;
+    // Assign new state logic
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            state      <= IDLE;
+        end else begin
+            state <= next_state;
+        end
+    end
+
+    // Next state logic
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            next_state <= IDLE;
         end else begin
             case (state)
                 IDLE: begin
-                    ready = 0;
                     if (measure == 1) begin
-                        i_dist   = 0;
-                        trig     = 1;
-                        counter  = CYCLES_10_US;
-                        state    = TRIG;
-                    end else begin
-                        trig    = 0;
-                        counter = 0;
+                        next_state  <= TRIG;
                     end
                 end
                 TRIG: begin
                     if (counter == 0) begin
-                        trig    = 0;
-                        state   = WAIT_ECHO;
+                        next_state <= WAIT_ECHO;
                     end
-                    counter = counter - 1;
                 end
                 WAIT_ECHO: begin
                     if (echo == 1) begin
-                        i_dist = i_dist + NM_PER_CYCLE;
-                        state = MEASURING;
+                        next_state <= MEASURING;
                     end
                 end
                 MEASURING: begin
-                    i_dist = i_dist + NM_PER_CYCLE;
                     if (echo == 0) begin
-                        ready = 1;
-                        state = IDLE;
+                        next_state <= READY;
                     end
+                end
+                READY: begin
+                    next_state <= IDLE;
+                end
+            endcase
+        end
+    end
+
+    // Outputs logic
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            trig    <= 0;
+            i_dist  <= 0;
+            ready   <= 0;
+            counter <= 0;
+        end else begin
+            case (state)
+                IDLE: begin
+                    if (measure == 1) begin
+                        counter     <= CYCLES_10_US;
+                    end
+                end
+                TRIG: begin
+                    ready   <= 0;
+                    i_dist  <= 0;
+                    trig    <= 1;
+                    counter <= counter - 1;
+                end
+                WAIT_ECHO: begin
+                    trig    <= 0;
+                end
+                MEASURING: begin
+                    i_dist <= i_dist + NM_PER_CYCLE;
+                end
+                READY: begin
+                    ready <= 1;
                 end
             endcase
         end
