@@ -21,9 +21,10 @@ module coreuart_vip (
 
     // Receive stub
     always begin
-        int delay = $urandom() % 1000 + 1000;
+        int delay = $urandom() % 100 + 100;
         $display($sformatf("Chosen delay: %d clocks", delay));
-        repeat (delay) @(posedge clk);
+        #(delay * 1ms);
+        @(posedge clk);
         rxrdy = 1;
         data_out = $urandom();
         $display($sformatf("Random data from UART: %h", data_out));
