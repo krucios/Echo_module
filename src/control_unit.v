@@ -91,8 +91,8 @@ module control_unit (
             data          <= 0;
             sonar_measure <= 0;
             servo_move    <= 0;
-            start_angle   <= 8'h80;
-            end_angle     <= 8'h80;
+            start_angle   <= 8'h00;
+            end_angle     <= 8'hFF;
         end else begin
             case(state)
                 FETCH_CMD_STATE: begin
