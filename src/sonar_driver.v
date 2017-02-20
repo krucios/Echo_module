@@ -14,9 +14,11 @@ module sonar_driver #(parameter freq = 50_000_000) (
     parameter CYCLE_PERIOD = 1_000_000_000 / freq;              // in ns
     parameter SOUND_SPEED  = 343210;                            // nm/us
     parameter NM_PER_CYCLE = SOUND_SPEED * CYCLE_PERIOD / 1000; // Sound speed = 343.21 m/s.
+    parameter ECHO_TIMEOUT = freq / 100;                        // 10 ms TO fro ECHO signal
 
     // INTERNAL REGISTERS
     reg[31:0] counter = 0;
+    reg[31:0] timeout = 0;
     reg[31:0] i_dist  = 0;
 
     reg[2:0]    state      = 0;
@@ -32,7 +34,7 @@ module sonar_driver #(parameter freq = 50_000_000) (
     // Assign new state logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            state      <= IDLE;
+            state <= IDLE;
         end else begin
             state <= next_state;
         end
@@ -57,6 +59,8 @@ module sonar_driver #(parameter freq = 50_000_000) (
                 WAIT_ECHO: begin
                     if (echo == 1) begin
                         next_state <= MEASURING;
+                    end else if (timeout == 0) begin
+                        next_state <= READY;
                     end
                 end
                 MEASURING: begin
@@ -82,7 +86,8 @@ module sonar_driver #(parameter freq = 50_000_000) (
             case (state)
                 IDLE: begin
                     if (measure == 1) begin
-                        counter     <= CYCLES_10_US;
+                        counter <= CYCLES_10_US;
+                        timeout <= ECHO_TIMEOUT;
                     end
                 end
                 TRIG: begin
@@ -92,6 +97,7 @@ module sonar_driver #(parameter freq = 50_000_000) (
                     counter <= counter - 1;
                 end
                 WAIT_ECHO: begin
+                    timeout <= timeout - 1;
                     trig    <= 0;
                 end
                 MEASURING: begin

@@ -19,6 +19,8 @@ module echo (
     );
 
     wire[7:0] servo_angle;
+    wire[7:0] servo_sangle;
+    wire[7:0] servo_eangle;
     wire      servo_cycle_done;
     wire[7:0] sonar_distance;
     wire      sonar_measure;
@@ -31,6 +33,16 @@ module echo (
             .servo_pwm(servo_pwm),
             .angle(servo_angle),
             .cycle_done(servo_cycle_done)
+        );
+
+    servo_fsm servo_ctrl(
+        .clk(clk),
+        .rst_n(rst_n),
+        .servo_cycle_done(servo_cycle_done),
+        .servo_angle(servo_angle),
+        .move_en(sonar_ready),
+        .start_angle(servo_sangle),
+        .end_angle(servo_eangle)
         );
 
     sonar_driver sonar(
@@ -52,8 +64,10 @@ module echo (
             .data_wen(wen),
             .rx_rdy(rxrdy),
             .tx_rdy(txrdy),
-            .servo_angle(servo_angle),
             .servo_cycle_done(servo_cycle_done),
+            .servo_angle(servo_angle),
+            .start_angle(servo_sangle),
+            .end_angle(servo_eangle),
             .sonar_distance(sonar_distance),
             .sonar_measure(sonar_measure),
             .sonar_ready(sonar_ready)
