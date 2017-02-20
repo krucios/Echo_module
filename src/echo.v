@@ -64,6 +64,7 @@ module echo (
             .data_wen(wen),
             .rx_rdy(rxrdy),
             .tx_rdy(txrdy),
+            .servo_cycle_done(servo_cycle_done),
             .servo_angle(servo_angle),
             .start_angle(servo_sangle),
             .end_angle(servo_eangle),

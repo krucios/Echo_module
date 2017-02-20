@@ -15,6 +15,9 @@ module control_unit (
         output  reg[7:0]    start_angle, // [8'h00 .. 8'hFF] angle reg's value
         output  reg[7:0]    end_angle,
 
+        // to servo driver
+        input   wire        servo_cycle_done,
+
         // to sonar_driver
         input   wire        sonar_ready,
         input   wire[7:0]   sonar_distance,
@@ -33,10 +36,11 @@ module control_unit (
     parameter FETCH_CMD       = 4'h1;
     parameter FETCH_DATA_PRE  = 4'h2;
     parameter FETCH_DATA      = 4'h3;
-    parameter START_MEASURE   = 4'h4;
-    parameter MEASURE         = 4'h5;
-    parameter WAIT_TX_RDY     = 4'h6;
-    parameter SEND_DATA       = 4'h7;
+    parameter WAIT_SERVO_DONE = 4'h4;
+    parameter START_MEASURE   = 4'h5;
+    parameter MEASURE         = 4'h6;
+    parameter WAIT_TX_RDY     = 4'h7;
+    parameter SEND_DATA       = 4'h8;
     reg[3:0]  state      = IDLE;
     reg[3:0]  next_state = IDLE;
 
@@ -68,7 +72,7 @@ module control_unit (
                     if (rx_rdy) begin
                         next_state <= FETCH_CMD;
                     end else if (mode == AUTO_MODE) begin    // In manual mode wait for measure cmd
-                        next_state <= START_MEASURE;
+                        next_state <= WAIT_SERVO_DONE;
                     end
                 end
                 FETCH_CMD: begin
@@ -87,7 +91,7 @@ module control_unit (
                             endcase // manual cmd case
                         end
                         default: begin // In this case: [7:4] - end angle MSB, [3:0] - start angle MSB
-                            next_state <= START_MEASURE;
+                            next_state <= IDLE;
                         end
                     endcase // cmd case
                 end
@@ -98,6 +102,11 @@ module control_unit (
                 end
                 FETCH_DATA: begin
                     next_state <= IDLE;
+                end
+                WAIT_SERVO_DONE: begin
+                    if (servo_cycle_done) begin
+                        next_state <= START_MEASURE;
+                    end
                 end
                 START_MEASURE: begin
                     next_state <= MEASURE;
@@ -152,7 +161,7 @@ module control_unit (
                             endcase // manual cmd case
                         end
                         default: begin // In this case: [7:4] - end angle MSB, [3:0] - start angle MSB
-                            if (cmd[3:0] > cmd[7:4]) begin
+                            if (cmd[3:0] < cmd[7:4]) begin
                                 start_angle <= {cmd[3:0], 4'h0};
                                 end_angle   <= {cmd[7:4], 4'h0};
                             end else begin
@@ -169,6 +178,9 @@ module control_unit (
                     start_angle <= cmd;
                     end_angle   <= cmd;
                     cmd_oen     <= 0;
+                end
+                WAIT_SERVO_DONE: begin
+
                 end
                 START_MEASURE: begin
                     sonar_measure <= 1; // Generate measure pulse

@@ -14,7 +14,7 @@ module sonar_driver #(parameter freq = 50_000_000) (
     parameter CYCLE_PERIOD = 1_000_000_000 / freq;              // in ns
     parameter SOUND_SPEED  = 343210;                            // nm/us
     parameter NM_PER_CYCLE = SOUND_SPEED * CYCLE_PERIOD / 1000; // Sound speed = 343.21 m/s.
-    parameter ECHO_TIMEOUT = freq;                              // 1 sec TO fro ECHO signal
+    parameter ECHO_TIMEOUT = freq / 100;                        // 10 ms TO fro ECHO signal
 
     // INTERNAL REGISTERS
     reg[31:0] counter = 0;
