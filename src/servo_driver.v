@@ -7,9 +7,10 @@ module servo_driver #(parameter freq = 50_000_000) (
         output reg       cycle_done = 0
     );
 
-    parameter CYCLES_1_MS  = freq / 1_000;
-    parameter CYCLES_19_MS = CYCLES_1_MS * 19;
-    parameter CYCLES_20_MS = CYCLES_1_MS * 20;
+    parameter CYCLES_1_MS      = freq / 1_000;
+    parameter CYCLES_PER_ANGLE = (CYCLES_1_MS * 2) / 8'hFF;
+    parameter CYCLES_21u33_MS  = CYCLES_1_MS * 21 + CYCLES_1_MS / 3;
+    parameter CYCLES_22_MS     = CYCLES_1_MS * 22;
 
     // INTERNAL REGISTERS
     reg[7:0]    angle_reg = 0;   // Used for storing angle
@@ -18,10 +19,10 @@ module servo_driver #(parameter freq = 50_000_000) (
 
     reg[1:0]    state = 0;              // FSM current state
     reg[1:0]    next_state = 0;         // FSM next state
-    parameter   GET_ANGLE   = 2'b00;
-    parameter   GET_WIDTH   = 2'b01;
-    parameter   HIGH_PULSE  = 2'b10;
-    parameter   LOW_PULSE   = 2'b11;
+    parameter   GET_ANGLE  = 2'b00;
+    parameter   GET_WIDTH  = 2'b01;
+    parameter   HIGH_PULSE = 2'b10;
+    parameter   LOW_PULSE  = 2'b11;
 
     // Assign new state logic
     always @(posedge clk or negedge rst_n) begin
@@ -70,21 +71,20 @@ module servo_driver #(parameter freq = 50_000_000) (
             case (state)
                 GET_ANGLE: begin
                     angle_reg   <= angle;
-                    counter     <= CYCLES_20_MS;
+                    cycle_done  <= 1;
+                    counter     <= CYCLES_22_MS;
                 end
                 GET_WIDTH: begin
-                    pulse_width <= CYCLES_19_MS - (angle_reg * CYCLES_1_MS) / 8'hFF;
+                    pulse_width <= CYCLES_21u33_MS - angle_reg * CYCLES_PER_ANGLE;
                     servo_pwm   <= 1;
-                    cycle_done  <= 1;
+                    cycle_done  <= 0;
                 end
                 HIGH_PULSE: begin
                     counter    <= counter - 1;
-                    cycle_done <= 0;
                     servo_pwm  <= 1;
                 end
                 LOW_PULSE: begin
                     counter    <= counter - 1;
-                    cycle_done <= 0;
                     servo_pwm  <= 0;
                 end
             endcase

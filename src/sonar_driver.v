@@ -15,6 +15,8 @@ module sonar_driver #(parameter freq = 50_000_000) (
     parameter SOUND_SPEED  = 343210;                            // nm/us
     parameter NM_PER_CYCLE = SOUND_SPEED * CYCLE_PERIOD / 1000; // Sound speed = 343.21 m/s.
 
+    parameter TIMEOUT      = freq;
+
     // INTERNAL REGISTERS
     reg[31:0] counter = 0;
     reg[31:0] i_dist  = 0;
@@ -57,6 +59,8 @@ module sonar_driver #(parameter freq = 50_000_000) (
                 WAIT_ECHO: begin
                     if (echo == 1) begin
                         next_state <= MEASURING;
+                    end else if (counter == TIMEOUT) begin
+                        next_state <= READY;
                     end
                 end
                 MEASURING: begin
@@ -92,6 +96,7 @@ module sonar_driver #(parameter freq = 50_000_000) (
                     counter <= counter - 1;
                 end
                 WAIT_ECHO: begin
+                    counter <= counter + 1;
                     trig    <= 0;
                 end
                 MEASURING: begin
