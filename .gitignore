@@ -5,4 +5,5 @@ testbench_old.sv
 !.gitignore
 *.log
 *.swp
+*.tcl
 
