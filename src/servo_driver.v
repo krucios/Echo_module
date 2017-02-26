@@ -27,32 +27,32 @@ module servo_driver #(parameter freq = 50_000_000) (
     // Assign new state logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            state <= GET_ANGLE;
+            state = GET_ANGLE;
         end else begin
-            state <= next_state;
+            state = next_state;
         end
     end
 
     // Next state logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            next_state <= GET_ANGLE;
+            next_state = GET_ANGLE;
         end else begin
             case (state)
                 GET_ANGLE: begin
-                    next_state  <= GET_WIDTH;
+                    next_state  = GET_WIDTH;
                 end
                 GET_WIDTH: begin
-                    next_state  <= HIGH_PULSE;
+                    next_state  = HIGH_PULSE;
                 end
                 HIGH_PULSE: begin
                     if (counter == pulse_width) begin
-                        next_state <= LOW_PULSE;
+                        next_state = LOW_PULSE;
                     end
                 end
                 LOW_PULSE: begin
                     if (counter == 0) begin
-                        next_state <= GET_ANGLE;
+                        next_state = GET_ANGLE;
                     end
                 end
             endcase
@@ -62,30 +62,30 @@ module servo_driver #(parameter freq = 50_000_000) (
     // Outputs logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            servo_pwm   <= 0;
-            cycle_done  <= 0;
-            counter     <= 0;
-            angle_reg   <= 0;
-            pulse_width <= 0;
+            servo_pwm   = 0;
+            cycle_done  = 0;
+            counter     = 0;
+            angle_reg   = 0;
+            pulse_width = 0;
         end else begin
             case (state)
                 GET_ANGLE: begin
-                    angle_reg   <= angle;
-                    cycle_done  <= 1;
-                    counter     <= CYCLES_22_MS;
+                    angle_reg   = angle;
+                    cycle_done  = 1;
+                    counter     = CYCLES_22_MS;
                 end
                 GET_WIDTH: begin
-                    pulse_width <= CYCLES_21u33_MS - angle_reg * CYCLES_PER_ANGLE;
-                    servo_pwm   <= 1;
-                    cycle_done  <= 0;
+                    pulse_width = CYCLES_21u33_MS - angle_reg * CYCLES_PER_ANGLE;
+                    servo_pwm   = 1;
+                    cycle_done  = 0;
                 end
                 HIGH_PULSE: begin
-                    counter    <= counter - 1;
-                    servo_pwm  <= 1;
+                    counter    = counter - 1;
+                    servo_pwm  = 1;
                 end
                 LOW_PULSE: begin
-                    counter    <= counter - 1;
-                    servo_pwm  <= 0;
+                    counter    = counter - 1;
+                    servo_pwm  = 0;
                 end
             endcase
         end

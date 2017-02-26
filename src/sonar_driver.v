@@ -36,44 +36,44 @@ module sonar_driver #(parameter freq = 50_000_000) (
     // Assign new state logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            state <= IDLE;
+            state = IDLE;
         end else begin
-            state <= next_state;
+            state = next_state;
         end
     end
 
     // Next state logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            next_state <= IDLE;
+            next_state = IDLE;
         end else begin
             case (state)
                 IDLE: begin
                     if (measure == 1) begin
-                        next_state  <= TRIG;
+                        next_state  = TRIG;
                     end
                 end
                 TRIG: begin
                     if (counter == 0) begin
-                        next_state <= WAIT_ECHO;
+                        next_state = WAIT_ECHO;
                     end
                 end
                 WAIT_ECHO: begin
                     if (echo == 1) begin
-                        next_state <= MEASURING;
+                        next_state = MEASURING;
                     end else if (timeout == 0) begin
-                        next_state <= READY;
+                        next_state = READY;
                     end
                 end
                 MEASURING: begin
                     if (echo == 0) begin
-                        next_state <= READY;
+                        next_state = READY;
                     end else if (timeout == 0) begin
-                        next_state <= READY;
+                        next_state = READY;
                     end
                 end
                 READY: begin
-                    next_state <= IDLE;
+                    next_state = IDLE;
                 end
             endcase
         end
@@ -82,34 +82,34 @@ module sonar_driver #(parameter freq = 50_000_000) (
     // Outputs logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            trig    <= 0;
-            i_dist  <= 0;
-            ready   <= 1;
-            counter <= 0;
+            trig    = 0;
+            i_dist  = 0;
+            ready   = 1;
+            counter = 0;
         end else begin
             case (state)
                 IDLE: begin
                     if (measure == 1) begin
-                        counter <= CYCLES_10_US;
-                        timeout <= ECHO_TIMEOUT;
+                        counter = CYCLES_10_US;
+                        timeout = ECHO_TIMEOUT;
                     end
                 end
                 TRIG: begin
-                    ready   <= 0;
-                    i_dist  <= 0;
-                    trig    <= 1;
-                    counter <= counter - 1;
+                    ready   = 0;
+                    i_dist  = 0;
+                    trig    = 1;
+                    counter = counter - 1;
                 end
                 WAIT_ECHO: begin
-                    timeout <= timeout - 1;
-                    trig    <= 0;
+                    timeout = timeout - 1;
+                    trig    = 0;
                 end
                 MEASURING: begin
-                    timeout <= timeout - 1;
-                    i_dist <= i_dist + NM_PER_CYCLE;
+                    timeout = timeout - 1;
+                    i_dist = i_dist + NM_PER_CYCLE;
                 end
                 READY: begin
-                    ready <= 1;
+                    ready = 1;
                 end
             endcase
         end

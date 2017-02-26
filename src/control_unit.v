@@ -30,7 +30,7 @@ module control_unit (
     // Internal registers for cmd processing
     parameter AUTO_MODE     = 1'b0;
     parameter MANUAL_MODE   = 1'b1;
-    reg       mode          = AUTO_MODE;
+    reg       mode          = MANUAL_MODE;
 
     parameter IDLE            = 4'h0;
     parameter FETCH_CMD       = 4'h1;
@@ -56,23 +56,23 @@ module control_unit (
     // Assign new state logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            state <= IDLE;
+            state = IDLE;
         end else begin
-            state <= next_state;
+            state = next_state;
         end
     end
 
     // Next state logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            next_state    <= IDLE;
+            next_state    = IDLE;
         end else begin
             case(state)
                 IDLE: begin
                     if (rx_rdy) begin
-                        next_state <= FETCH_CMD;
+                        next_state = FETCH_CMD;
                     end else if (mode == AUTO_MODE) begin    // In manual mode wait for measure cmd
-                        next_state <= WAIT_SERVO_DONE;
+                        next_state = WAIT_SERVO_DONE;
                     end
                 end
                 FETCH_CMD: begin
@@ -80,52 +80,52 @@ module control_unit (
                         MANUAL_CMD: begin // in this case
                             case (cmd[3:2])
                                 SET_ANGLE_CMD: begin
-                                    next_state <= FETCH_DATA_PRE;
+                                    next_state = FETCH_DATA_PRE;
                                 end
                                 SET_MODE_CMD: begin
-                                    next_state <= IDLE;
+                                    next_state = IDLE;
                                 end
                                 MEASURE_CMD: begin
-                                    next_state <= START_MEASURE;
+                                    next_state = START_MEASURE;
                                 end
                             endcase // manual cmd case
                         end
                         default: begin // In this case: [7:4] - end angle MSB, [3:0] - start angle MSB
-                            next_state <= IDLE;
+                            next_state = IDLE;
                         end
                     endcase // cmd case
                 end
                 FETCH_DATA_PRE: begin
                     if (rx_rdy) begin
-                        next_state <= FETCH_DATA;
+                        next_state = FETCH_DATA;
                     end
                 end
                 FETCH_DATA: begin
-                    next_state <= IDLE;
+                    next_state = IDLE;
                 end
                 WAIT_SERVO_DONE: begin
                     if (servo_cycle_done) begin
-                        next_state <= START_MEASURE;
+                        next_state = START_MEASURE;
                     end
                 end
                 START_MEASURE: begin
-                    next_state <= MEASURE;
+                    next_state = MEASURE;
                 end
                 MEASURE: begin
                     if (sonar_ready) begin
-                        next_state <= WAIT_TX_RDY;
+                        next_state = WAIT_TX_RDY;
                     end
                 end
                 WAIT_TX_RDY: begin
                     if (tx_rdy) begin
-                        next_state <= SEND_DATA;
+                        next_state = SEND_DATA;
                     end
                 end
                 SEND_DATA: begin
                     if (~tx_rdy) begin
                         case(send_data_type)
-                            0: next_state <= WAIT_TX_RDY;
-                            1: next_state <= IDLE;
+                            0: next_state = WAIT_TX_RDY;
+                            1: next_state = IDLE;
                         endcase
                     end
                 end
@@ -136,68 +136,67 @@ module control_unit (
     // Outputs logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            mode          <= AUTO_MODE;
-            cmd_oen       <= 1;
-            data_wen      <= 1;
-            data          <= 0;
-            sonar_measure <= 0;
-            start_angle   <= 8'h20;
-            end_angle     <= 8'h60;
+            mode          = MANUAL_MODE;
+            cmd_oen       = 1;
+            data_wen      = 1;
+            data          = 0;
+            sonar_measure = 0;
+            start_angle   = 8'h00;
+            end_angle     = 8'hFE;
         end else begin
             case(state)
                 IDLE: begin
-                    cmd_oen       <= 1;
-                    data_wen      <= 1;
-                    sonar_measure <= 0;
+                    cmd_oen       = 1;
+                    data_wen      = 1;
+                    sonar_measure = 0;
                 end
                 FETCH_CMD: begin
-                    cmd_oen <= 0;
+                    cmd_oen = 0;
                     case (cmd[7:4])
                         MANUAL_CMD: begin // in this case
                             case (cmd[3:2])
                                 SET_MODE_CMD: begin
-                                    mode <= cmd[0];
+                                    mode = cmd[0];
                                 end
                             endcase // manual cmd case
                         end
                         default: begin // In this case: [7:4] - end angle MSB, [3:0] - start angle MSB
                             if (cmd[3:0] < cmd[7:4]) begin
-                                start_angle <= {cmd[3:0], 4'h0};
-                                end_angle   <= {cmd[7:4], 4'h0};
+                                start_angle = {cmd[3:0], 4'h0};
+                                end_angle   = {cmd[7:4], 4'h0};
                             end else begin
-                                start_angle <= {cmd[7:4], 4'h0};
-                                end_angle   <= {cmd[3:0], 4'h0};
+                                start_angle = {cmd[7:4], 4'h0};
+                                end_angle   = {cmd[3:0], 4'h0};
                             end
                         end
                     endcase // cmd case
                 end
                 FETCH_DATA_PRE: begin
-                    cmd_oen <= 1;
+                    cmd_oen = 1;
                 end
                 FETCH_DATA: begin
-                    start_angle <= cmd;
-                    end_angle   <= cmd;
-                    cmd_oen     <= 0;
+                    start_angle = cmd;
+                    end_angle   = cmd;
+                    cmd_oen     = 0;
                 end
                 WAIT_SERVO_DONE: begin
-
                 end
                 START_MEASURE: begin
-                    sonar_measure <= 1; // Generate measure pulse
+                    sonar_measure = 1; // Generate measure pulse
                 end
                 MEASURE: begin
-                    sonar_measure <= 0;
-                    distance      <= sonar_distance;
+                    sonar_measure = 0;
+                    distance      = sonar_distance;
                 end
                 WAIT_TX_RDY: begin
-                    data_wen <= 1;
+                    data_wen = 1;
                 end
                 SEND_DATA: begin
-                    data_wen        <= 0;
-                    send_data_type  <= !send_data_type;
+                    data_wen        = 0;
+                    send_data_type  = !send_data_type;
                     case(send_data_type)
-                        0: data     <= {distance[7:1], 1'b0}; // Add zero as LSB for show that it's distance byte
-                        1: data     <= {servo_angle[7:1], 1'b1}; // Add one as LSB for show that it's angle byte
+                        0: data     = {distance[7:1], 1'b0}; // Add zero as LSB for show that it's distance byte
+                        1: data     = {servo_angle[7:1], 1'b1}; // Add one as LSB for show that it's angle byte
                     endcase
                 end
             endcase

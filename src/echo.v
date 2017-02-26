@@ -1,4 +1,4 @@
-module echo (
+module echo #(parameter freq = 50_000_000) (
         input   wire        clk,
         input   wire        rst_n,
 
@@ -27,7 +27,7 @@ module echo (
     wire      sonar_ready;
 
 
-    servo_driver servo(
+    servo_driver #(.freq(freq)) servo(
             .clk(clk),
             .rst_n(rst_n),
             .servo_pwm(servo_pwm),
@@ -35,7 +35,7 @@ module echo (
             .cycle_done(servo_cycle_done)
         );
 
-    servo_fsm servo_ctrl(
+    servo_fsm #(.PWM_CYCLES_PER_ITER(1)) servo_ctrl(
         .clk(clk),
         .rst_n(rst_n),
         .servo_cycle_done(servo_cycle_done),
@@ -45,7 +45,7 @@ module echo (
         .end_angle(servo_eangle)
         );
 
-    sonar_driver sonar(
+    sonar_driver #(.freq(freq)) sonar(
             .clk(clk),
             .rst_n(rst_n),
             .echo(echo),
