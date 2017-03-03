@@ -26,7 +26,7 @@ module coreuart_vip (
         #(delay * 1ms);
         @(posedge clk);
         rxrdy = 1;
-        data_out = $urandom();
+        data_out = 8'h8F;
         $display($sformatf("Random data from UART: %h", data_out));
         while (oen) @(posedge clk);
         @(posedge clk);

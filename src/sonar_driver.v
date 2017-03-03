@@ -90,12 +90,12 @@ module sonar_driver #(parameter freq = 50_000_000) (
             case (state)
                 IDLE: begin
                     if (measure == 1) begin
+                        ready   = 0;
                         counter = CYCLES_10_US;
                         timeout = ECHO_TIMEOUT;
                     end
                 end
                 TRIG: begin
-                    ready   = 0;
                     i_dist  = 0;
                     trig    = 1;
                     counter = counter - 1;
