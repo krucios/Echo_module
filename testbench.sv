@@ -44,8 +44,8 @@ module top();
     echo dut(
             .clk(clk),
             .rst_n(rst_n),
-            .echo(1'b0),
-            // .echo(sonar_echo),
+            // .echo(1'b0),
+            .echo(sonar_echo),
             .trig(sonar_trig),
             .data_in(uart_data_in),
             .data_out(uart_data_out),

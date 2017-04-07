@@ -20,6 +20,7 @@ module coreuart_vip (
     end
 
     // Receive stub
+    /*
     always begin
         int delay = $urandom() % 100 + 100;
         $display($sformatf("Chosen delay: %d clocks", delay));
@@ -32,4 +33,5 @@ module coreuart_vip (
         @(posedge clk);
         rxrdy = 0;
     end
+    */
 endmodule : coreuart_vip

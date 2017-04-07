@@ -30,7 +30,7 @@ module control_unit (
     // Internal registers for cmd processing
     parameter AUTO_MODE     = 1'b0;
     parameter MANUAL_MODE   = 1'b1;
-    reg       mode          = MANUAL_MODE;
+    reg       mode          = AUTO_MODE;
 
     parameter IDLE            = 4'h0;
     parameter FETCH_CMD       = 4'h1;
@@ -122,12 +122,7 @@ module control_unit (
                     end
                 end
                 SEND_DATA: begin
-                    if (~tx_rdy) begin
-                        case(send_data_type)
-                            0: next_state = WAIT_TX_RDY;
-                            1: next_state = IDLE;
-                        endcase
-                    end
+                    next_state = IDLE;
                 end
             endcase // state case
         end
@@ -136,7 +131,7 @@ module control_unit (
     // Outputs logic
     always @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            mode          = MANUAL_MODE;
+            mode          = AUTO_MODE;
             cmd_oen       = 1;
             data_wen      = 1;
             data          = 0;
@@ -190,14 +185,10 @@ module control_unit (
                 end
                 WAIT_TX_RDY: begin
                     data_wen = 1;
+                    data     = distance;
                 end
                 SEND_DATA: begin
-                    data_wen        = 0;
-                    send_data_type  = !send_data_type;
-                    case(send_data_type)
-                        0: data     = {distance[7:1], 1'b0}; // Add zero as LSB for show that it's distance byte
-                        1: data     = {servo_angle[7:1], 1'b1}; // Add one as LSB for show that it's angle byte
-                    endcase
+                    data_wen = 0;
                 end
             endcase
         end
